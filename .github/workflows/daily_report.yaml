@@ -27,7 +27,7 @@ on:
             SHOPIFY_STORE_DOMAIN: ${{secrets.SHOPIFY_STORE_DOMAIN}}
             SHOPIFY_CLIENT_ID: ${{secrets.SHOPIFY_CLIENT_ID}}
             SHOPIFY_CLIENT_SECRET: ${{secrets.SHOPIFY_CLIENT_SECRET}}
-            SHOPIFY_AUSPOST_API_KEY: ${{secrets.AUSPOST_API_KEY}}
+            AUSPOST_API_KEY: ${{secrets.AUSPOST_API_KEY}}
 
 
 

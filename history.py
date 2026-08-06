@@ -47,12 +47,3 @@ def filter_dropped_items(items, drop_after_Days =3, log_path= None):
         item for item in filter_dropped_items
         if not should_drop(item.tracking_number, drop_after_days, log_path)
         ]
-        
-        
-        
-    
-
-
-
-
-    

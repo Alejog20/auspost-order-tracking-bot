@@ -1,34 +1,31 @@
 name: Daily tracking report
 
-on: 
-  schedule: 
-  # 2:07 pm Melbourne time, weekdays
-  # can be modified, of course
-  - cron : "7 14 * * 1-5"
-    timezone: "Australia/Melbourne"
+on:
+  schedule:
+    # 2:07 PM Melbourne time, weekdays
+    - cron: "7 14 * * 1-5"
 
-  workflow_dispatch: 
+  workflow_dispatch:
 
-  jobs: 
-    send-report:
-      runs-on: ubuntu-latest
-      steps: 
-        - uses: actions
-            /checkout@v4
-        - uses: actions/setup-python@v5
-          with:
-            python-version: "3.12"
-        - run: pip install -r 
-            requirements.txt
-        - run: python
-            run_daily_report.py\
-          env: 
-            ANTHROPIC_API_KEY:${{secrets.ANTHROPIC_API_KEY}}
-            SHOPIFY_STORE_DOMAIN: ${{secrets.SHOPIFY_STORE_DOMAIN}}
-            SHOPIFY_CLIENT_ID: ${{secrets.SHOPIFY_CLIENT_ID}}
-            SHOPIFY_CLIENT_SECRET: ${{secrets.SHOPIFY_CLIENT_SECRET}}
-            AUSPOST_API_KEY: ${{secrets.AUSPOST_API_KEY}}
+jobs:
+  send-report:
+    runs-on: ubuntu-latest
 
+    steps:
+      - uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
+      - name: Run daily report
+        run: python run_daily_report.py
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SHOPIFY_STORE_DOMAIN: ${{ secrets.SHOPIFY_STORE_DOMAIN }}
+          SHOPIFY_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID }}
+          SHOPIFY_CLIENT_SECRET: ${{ secrets.SHOPIFY_CLIENT_SECRET }}
+          AUSPOST_API_KEY: ${{ secrets.AUSPOST_API_KEY }}

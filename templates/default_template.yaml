@@ -1,5 +1,5 @@
 company_name: "The Company Name"
-report_title = "Daily Tracking Report"
+report_title: "Daily Tracking Report"
 
 # A shipment with no scan update in this many days gets flagged
 # Even if its expected delivery date hasn't passed yet

@@ -30,7 +30,7 @@ def build_prompt(items, config):
         lines.append(
             f"- Tracking {item.tracking_number}: category '{item.category}',"
             f"status '{item.status}', {detail}, flagged as needing attention: {attention}"
-        )
+             )
 
     shipment_block = "\n".join(lines)
     system = (
@@ -102,7 +102,7 @@ def prepare_render_context(items, config, narrative):
        "items": rendered_items,    
     }
 
-def _render(items, config, narrative):
+def _render_report(items, config, narrative):
     """
     Email safe version: table layout, inline styles for actual sending
     """
@@ -110,6 +110,46 @@ def _render(items, config, narrative):
 
 def render_pdf_report(items, config, narrative):
     """
-    
-    
+    Print pdf doc: @page setup, page break control, and adds modern CSS
     """
+    return _render(items, config, narrative, "report_pdf.html")
+
+def log_report(items, config, log_path=None):
+    """
+    Appends today's flagged state to a local history file. 
+    Nothing reads this yet - it exists so a future weekly digest or trend 
+    view has real data to work with from day 1
+    """
+log_path = log_path or BASE_DIR / "report_history.jsonl"
+entry = {
+    "date": date.today().isoformat(),
+    "items": [
+        {
+            "tracking_number" : i.tracking_number,
+            "status": i.status,
+            "category": i.category,
+            "needs_attention": i.needs_Attention(config["stale_after_days"])
+            "days_since_scan": i.days_since_scan,
+        }
+    for i in items
+
+    ],
+}
+with open(log_path, "a") as f:
+    f.write(json.dumps(entry)+ "\n")
+
+def generate_report(items, template_path=None):
+    config = load_template_config(template_path)
+    items = history.filter_dropped_items(items, config.get("drop_after_days",3))
+    system_prompt, shipment_block = build_prompt(items, config)
+    narrative = call_claude(system_prompt, shipment_block)
+    log_report(items, config)
+    return render_report(items, config, narrative)
+
+def generate_pdf_report(items, template_path=None):
+    config= load_template_config(template_path)
+    items= history.filter_dropped_items(items, config.get("drop_after_days", 3))
+    system_prompt, shipment_block = build_prompt(items, config)
+    narrative = call_claude(system_prompt, shipment_block)
+    log_report(items, config)
+    return render_pdf_report(items, config, narrative)

@@ -16,17 +16,17 @@ def first_delivered_date(tracking_number, log_path=None):
     Earliest date this tracking number was logged as delivered, 
     or none if it has never shown up as delivered
     """
-earliest = None
+    earliest = None
 
-for entry in _read_history(log_path):
-    entry_date + date.fromisoformat(entry["date"])
-    if item["tracking_number"] != tracking_number:
-        continue
-    if item.get("category") != "delivered":
-        continue
-    if earliest is None or entry_date < earliest:
-        earliest = entry_date
-    return earliest
+    for entry in _read_history(log_path):
+        entry_date = date.fromisoformat(entry["date"])
+        if item["tracking_number"] != tracking_number:
+            continue
+        if item.get("category") != "delivered":
+            continue
+        if earliest is None or entry_date < earliest:
+            earliest = entry_date
+        return earliest
 
 def should_drop(tracking_number, drop_after_days=3, log_path=None):
     """ 

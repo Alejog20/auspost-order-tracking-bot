@@ -1,0 +1,27 @@
+company_name: "The Company Name"
+report_title = "Daily Tracking Report"
+
+# A shipment with no scan update in this many days gets flagged
+# Even if its expected delivery date hasn't passed yet
+
+stale_after_days: 2
+
+# A shipment that has been sitting as delivered for longer than this 
+# many days gets left out of the report entirely, it's done, no need to
+# keep to reporting on it
+drop_after_days: 3
+
+# Steers the voice of the given narrative
+tone: "plain, clever, direct, no corporate fluff, flag problems crearly"
+
+brand: 
+  delivered_color: "#3B6D11"
+  delivered_bg: "#EAF3D3"
+  in_transit_color: "#185FA5"
+  in_transit_bg: "#E6F1FB"
+  collection_color: "#534AB7"
+  collection_bg: "#EEEDFE"
+  attention_color: "#854F0B"
+  attention_bg: "#FAEEDA"
+
+  

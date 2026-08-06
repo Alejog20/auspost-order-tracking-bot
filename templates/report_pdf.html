@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <style>
+      @page {
+        size: A4;
+        margin: 2cm;
+      }
+      body {
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        color: #1a1a1a;
+      }
+      h1 {
+        font-size: 22px;
+        margin-bottom: 0;
+      }
+      .report-date {
+        color: #666666;
+        font-size: 13px;
+        margin-top: 4px;
+      }
+      .summary {
+        font-size: 15px;
+        margin: 16px 0;
+      }
+      .stats {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      .stat {
+        text-align: center;
+      }
+      .stat .count {
+        font-size: 24px;
+        font-weight: bold;
+      }
+      .item {
+        padding: 12px 0;
+        border-top: 1px solid #eeeeee;
+        break-inside: avoid;
+      }
+      .badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 11px;
+        margin-left: 8px;
+      }
+      .narrative {
+        margin-top: 4px;
+        color: #444444;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>{{ report_title }}</h1>
+    <div class="report-date">{{ report_date }}</div>
+    <p class="summary">{{ summary_headline }}</p>
+
+    <div class="stats">
+      {% for stat in stats %}
+      <div class="stat" style="color:{{ stat.color }};">
+        <div class="count">{{ stat.count }}</div>
+        <div>{{ stat.label }}</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% for item in items %}
+    <div class="item">
+      <strong>{{ item.tracking_number }}</strong>
+      <span class="badge" style="background-color:{{ item.badge_bg }}; color:{{ item.badge_text }};">{{ item.status_label }}</span>
+      <div class="narrative">{{ item.narrative }}</div>
+    </div>
+    {% endfor %}
+  </body>
+</html>

@@ -13,9 +13,9 @@ def _item(category, **overrides):
     return TrackingItem(**defaults)
 
 def test_delivered_never_needs_attention():
-    item = _item("delivered", 
+    item = _item("delivered",
                  last_scan_time=datetime.now() - timedelta(days=30))
-    assert item.needs_attention(stale_after_days=2) is True
+    assert item.needs_attention(stale_after_days=2) is False
 
 def test_in_transit_recent_scan_no_attention():
     item = _item("in_transit", last_scan_time = datetime.now() - timedelta(hours=1))

@@ -20,19 +20,17 @@ Repo: https://github.com/Alejog20/auspost-order-tracking-bot
 - All 20 tests passing locally
 - Decision made: email delivery via SMTP using our own address for now, Jay's preferred inbox to be swapped in once confirmed
 
-## Day 3 — next, unblocked, doesn't need anything from Jay
+## Day 3 — done, with one open caveat
 
-These were correctly identified as unblocked on Day 1, worth being precise now that it's time to actually build them: the API docs are public, only *testing against his real account* is blocked, not writing the code itself.
-
-1. **Australia Post connector** (`connectors/auspost.py`) — OAuth2 client against the published Shipping & Tracking API. Build against the documented schema, mock the HTTP calls in tests, structure credentials to load from `AUSPOST_API_KEY`.
-2. **Shopify connector** (`connectors/shopify.py`) — Admin API client pulling orders and their fulfillment tracking numbers. Same approach: build against Shopify's public docs, mock in tests, credentials from `SHOPIFY_STORE_DOMAIN` / `SHOPIFY_CLIENT_ID` / `SHOPIFY_CLIENT_SECRET`. Remember: the access token this issues expires roughly every 24 hours (Shopify's post-January-2026 flow), the client ID and secret don't, build the refresh into the connector itself, not into anything Jay has to think about.
-3. **`run_daily_report.py`** — the actual production entrypoint the workflow calls. Doesn't exist yet. Wires together: Shopify connector → Australia Post connector → `history.filter_dropped_items` → `report_generator.generate_report` / `generate_pdf_report` → email send.
-4. **Email sending module** (`delivery/email_sender.py`) — SMTP, using our own address as the interim sender per the Day 2 decision. Swap to Jay's preferred setup once he confirms.
-5. Test each connector against **mocked** responses matching the real APIs' documented shapes. This is what actually unblocks Day 3 without needing Jay's credentials yet, code and tests can be fully correct and verified before a single real API call happens.
+1. **Australia Post connector** (`connectors/auspost.py`) — built against `AUTH-KEY` header + `digitalapi.auspost.com.au/shipping/v1/track`, mocked in `tests/test_auspost.py`. **Caveat:** this is a best-effort reconstruction, not verified against Australia Post's current live docs — their developer portal renders via JavaScript and couldn't be fetched to confirm the exact request/response shape. Treat as a first draft to correct against real docs or a sample response before the live test below, not as verified-correct.
+2. **Shopify connector** (`connectors/shopify.py`) — GraphQL Admin API (Shopify's REST Admin API is legacy as of 2026; new integrations use GraphQL), client credentials grant, 24h token auto-refresh built into `ShopifyClient`. Confirmed against current shopify.dev docs. Mocked in `tests/test_shopify.py`.
+3. **`run_daily_report.py`** — wires Shopify connector → Australia Post connector → `report_generator.generate_report` (which applies `history.filter_dropped_items` internally) → email send. Skips items Australia Post can't find rather than failing the whole run; skips the email entirely (logs instead) if there are zero shipments for the day, to avoid a wasted Claude call and a content-free email — flagging this as a judgment call, not a spec'd behavior, in case Jay would rather always get a "nothing today" email. **Only wires the email path, not `generate_pdf_report`** — PDF delivery has no rendering pipeline decided yet (HTML → PDF needs a library choice that hasn't been made), so it's left out rather than guessed at.
+4. **Email sending module** (`delivery/email_sender.py`) — SMTP, reads `EMAIL_RECIPIENT` / `SMTP_USERNAME` / `SMTP_PASSWORD` / `SMTP_HOST` / `SMTP_PORT` from env, mocked in `tests/test_email_sender.py`.
+5. All new modules mocked in tests, 34/34 passing (`uv run pytest -v`).
 
 ## Blocked — waiting on Jay
 
-- Connecting the Australia Post connector to his real API key
+- Connecting the Australia Post connector to his real API key, **and** confirming the connector's assumed request/response shape is actually correct
 - Connecting the Shopify connector to his real store (staff account invite)
 - A live end-to-end run against real data
 
@@ -42,6 +40,8 @@ These were correctly identified as unblocked on Day 1, worth being precise now t
 - Which inbox the finished report should actually be sent to
 - Time zone and exact hour the job should run (currently a placeholder: weekdays, 2:07pm Melbourne)
 - The `.env` / GitHub Secrets values themselves: `SHOPIFY_STORE_DOMAIN`, `SHOPIFY_CLIENT_ID`, `SHOPIFY_CLIENT_SECRET`, `AUSPOST_API_KEY`
+- SMTP sending credentials: `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_HOST` — not yet in `.env`, needed before `run_daily_report.py` can actually send anything
+- Whether a PDF format is still wanted, and if so, what should render it (no HTML→PDF library is chosen yet)
 
 ## When Jay's inputs arrive
 

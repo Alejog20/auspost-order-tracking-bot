@@ -23,7 +23,7 @@ Jay's is a gift company. Recipients don't know deliveries are coming, so there's
 - Jinja2 for templating, PyYAML for config
 - Anthropic SDK for the report narrative
 - pytest for testing
-- GitHub Actions for both scheduling (`daily_report.yml`) and CI (`tests.yml`)
+- GitHub Actions for both scheduling (`daily_report.yaml`) and CI (`tests.yml`)
 - SMTP for email delivery (interim sender: our own address, until Jay confirms his preferred inbox)
 
 ## Data model
@@ -50,7 +50,7 @@ History log (`report_history.jsonl`, one JSON object per line): date plus each i
 
 ## Layers
 
-**Extraction** (`connectors/`, not built yet) — Shopify Admin API for the day's orders and tracking numbers, Australia Post API for live status on each. Two independent sources, both documented publicly, both buildable without Jay's credentials, only *testing* against his real accounts is blocked.
+**Extraction** (`connectors/`) — Shopify's GraphQL Admin API for the day's orders and tracking numbers (`shopify.py`, client-credentials grant with automatic 24h token refresh), Australia Post's tracking API for live status on each (`auspost.py`, request/response shape not yet verified against live docs — see IMPLEMENTATION_PLAN.md). Two independent sources, both buildable without Jay's credentials, only *testing* against his real accounts is blocked.
 
 **Rules** (`history.py`) — the 3-day drop-off filter, applied before anything else sees the data. Delivered-and-stale items never reach the prompt, the flagging logic, or the report.
 
@@ -58,7 +58,7 @@ History log (`report_history.jsonl`, one JSON object per line): date plus each i
 
 **Output** — two templates, deliberately different under the hood: `report_email.html` is table-based with inline styles for email-client compatibility, `report_pdf.html` uses modern CSS and proper `@page` rules for print, since neither format's constraints apply to the other.
 
-**Delivery** (`delivery/`, not built yet) — SMTP send of whichever format(s) Jay wants once confirmed.
+**Delivery** (`delivery/email_sender.py`) — SMTP send of the email report. SMTP sending credentials aren't in `.env` yet (see IMPLEMENTATION_PLAN.md), so this can't send for real until they land. PDF delivery has no rendering pipeline decided yet, so `run_daily_report.py` only wires the email path.
 
 **Scheduling** — GitHub Actions, weekdays, currently 2:07pm Melbourne (placeholder pending Jay's actual preference), a few minutes off the hour deliberately since scheduled runs queue up at :00 across all of GitHub.
 
@@ -67,13 +67,13 @@ History log (`report_history.jsonl`, one JSON object per line): date plus each i
 ```
 auspost-order-tracking-bot/
 ├── .github/workflows/
-│   ├── daily_report.yml       # scheduled production run
+│   ├── daily_report.yaml      # scheduled production run
 │   └── tests.yml              # CI, every push/PR
-├── connectors/                # Shopify + Australia Post, next up
-│   ├── shopify.py
-│   └── auspost.py
-├── delivery/                  # email sending, next up
-│   └── email_sender.py
+├── connectors/
+│   ├── shopify.py             # GraphQL Admin API, tracking numbers per order
+│   └── auspost.py             # live tracking status, schema unverified — see IMPLEMENTATION_PLAN.md
+├── delivery/
+│   └── email_sender.py        # SMTP send, real credentials not wired yet
 ├── templates/
 │   ├── default_template.yaml
 │   ├── report_email.html
@@ -81,14 +81,18 @@ auspost-order-tracking-bot/
 ├── tests/
 │   ├── test_models.py
 │   ├── test_history.py
-│   └── test_report_generator.py
+│   ├── test_report_generator.py
+│   ├── test_shopify.py
+│   ├── test_auspost.py
+│   ├── test_email_sender.py
+│   └── test_run_daily_report.py
 ├── models.py
 ├── history.py
 ├── report_generator.py
-├── run_daily_report.py        # production entrypoint, doesn't exist yet
+├── run_daily_report.py        # production entrypoint
 ├── demo.py                    # local testing script with real sample data
-├── requirements.txt
-├── requirements-dev.txt
+├── pyproject.toml             # uv-managed dependencies
+├── uv.lock
 ├── pytest.ini
 ├── .gitignore
 ├── CLAUDE.md

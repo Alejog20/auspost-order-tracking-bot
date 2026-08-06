@@ -9,5 +9,8 @@ wheels/
 .venv
 .env
 .md
+.png
+.jpg
+.jpeg
 
 Docs/

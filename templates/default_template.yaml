@@ -12,7 +12,7 @@ stale_after_days: 2
 drop_after_days: 3
 
 # Steers the voice of the given narrative
-tone: "plain, clever, direct, no corporate fluff, flag problems crearly"
+tone: "plain, clever, direct, no corporate fluff, flag problems crearly and order numbers related"
 
 brand: 
   delivered_color: "#3B6D11"

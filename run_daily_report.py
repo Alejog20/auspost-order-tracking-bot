@@ -16,8 +16,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def collect_tracking_items():
-    tracking_numbers = shopify.get_todays_tracking_numbers()
+def collect_tracking_items(lookback_days=10):
+    tracking_numbers = shopify.get_active_tracking_numbers(lookback_days=lookback_days)
     items = []
     for tracking_number in tracking_numbers:
         try:
@@ -28,13 +28,13 @@ def collect_tracking_items():
 
 
 def main():
-    items = collect_tracking_items()
+    config = rg.load_template_config()
+    items = collect_tracking_items(lookback_days=config.get("shipment_lookback_days", 10))
 
     if not items:
         logger.info("No shipments to report today, skipping email send")
         return
 
-    config = rg.load_template_config()
     html = rg.generate_report(items)
     send_report_email(
         subject=f"{config['company_name']} — {config['report_title']}",

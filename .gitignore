@@ -15,3 +15,8 @@ wheels/
 
 Docs/
 CLAUDE.md
+.
+
+.env
+.local 
+.env.*.local

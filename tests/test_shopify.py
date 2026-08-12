@@ -92,26 +92,67 @@ def test_graphql_raises_on_errors(mocker):
         pass
 
 
-def test_get_todays_tracking_numbers_flattens_fulfillment_orders(mocker):
-    client = mocker.Mock()
-    client.graphql.return_value = {
+def _orders_page(edges, has_next_page=False, end_cursor=None):
+    return {
         "orders": {
-            "edges": [
-                {
-                    "node": {
-                        "name": "#1001",
-                        "fulfillmentOrders": {
-                            "edges": [
-                                {"node": {"trackingInfo": [{"number": "ABC123"}]}},
-                                {"node": {"trackingInfo": [{"number": "XYZ789"}, {"number": None}]}},
-                            ]
-                        },
-                    }
-                }
-            ]
+            "pageInfo": {"hasNextPage": has_next_page, "endCursor": end_cursor},
+            "edges": edges,
         }
     }
 
-    numbers = shopify.get_todays_tracking_numbers(client=client)
+
+def test_get_active_tracking_numbers_flattens_fulfillment_orders(mocker):
+    client = mocker.Mock()
+    client.graphql.return_value = _orders_page([
+        {
+            "node": {
+                "name": "#1001",
+                "fulfillmentOrders": {
+                    "edges": [
+                        {"node": {"trackingInfo": [{"number": "ABC123"}]}},
+                        {"node": {"trackingInfo": [{"number": "XYZ789"}, {"number": None}]}},
+                    ]
+                },
+            }
+        }
+    ])
+
+    numbers = shopify.get_active_tracking_numbers(client=client)
 
     assert numbers == ["ABC123", "XYZ789"]
+
+
+def test_get_active_tracking_numbers_paginates(mocker):
+    client = mocker.Mock()
+    page_1 = _orders_page(
+        [{"node": {"name": "#1001", "fulfillmentOrders": {"edges": [
+            {"node": {"trackingInfo": [{"number": "ABC123"}]}},
+        ]}}}],
+        has_next_page=True,
+        end_cursor="cursor1",
+    )
+    page_2 = _orders_page(
+        [{"node": {"name": "#1002", "fulfillmentOrders": {"edges": [
+            {"node": {"trackingInfo": [{"number": "DEF456"}]}},
+        ]}}}]
+    )
+    client.graphql.side_effect = [page_1, page_2]
+
+    numbers = shopify.get_active_tracking_numbers(client=client)
+
+    assert numbers == ["ABC123", "DEF456"]
+    assert client.graphql.call_count == 2
+    second_call_variables = client.graphql.call_args_list[1][0][1]
+    assert second_call_variables["cursor"] == "cursor1"
+
+
+def test_get_active_tracking_numbers_query_covers_lookback_and_partial_fulfillment(mocker):
+    client = mocker.Mock()
+    client.graphql.return_value = _orders_page([])
+
+    shopify.get_active_tracking_numbers(client=client, lookback_days=5)
+
+    variables = client.graphql.call_args[0][1]
+    assert "fulfillment_status:fulfilled" in variables["query"]
+    assert "fulfillment_status:partial" in variables["query"]
+    assert "created_at:>=" in variables["query"]

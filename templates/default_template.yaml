@@ -11,7 +11,13 @@ stale_after_days: 2
 # keep to reporting on it
 drop_after_days: 3
 
-# Steers the voice of the given narrative
+
+# How many days back to look for orders when checking Australia Post status.
+# Should comfortably exceed how long a parcel normally takes to arrive, so
+# nothing still in transit falls out of the window before it's delivered
+shipment_lookback_days: 10
+
+# Voice of given Claude's narrative
 tone: "plain, professional clever, direct, no corporate fluff, flag problems crearly and order numbers related, raise any business concerning issues with the highest priority and think of customer satisfaction"
 
 brand: 

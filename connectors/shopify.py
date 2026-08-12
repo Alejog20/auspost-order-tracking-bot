@@ -11,13 +11,17 @@ so nothing outside this module has to think about the 24h expiry.
 
 import os
 import time
-from datetime import date
+from datetime import date, timedelta
 
 import requests
 
-TODAYS_ORDERS_QUERY = """
-query TodaysOrders($query: String!) {
-  orders(first: 50, query: $query) {
+ACTIVE_ORDERS_QUERY = """
+query ActiveOrders($query: String!, $cursor: String) {
+  orders(first: 250, after: $cursor, query: $query) {
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
     edges {
       node {
         name
@@ -91,19 +95,42 @@ class ShopifyClient:
         return payload["data"]
 
 
-def get_todays_tracking_numbers(client=None):
+def get_active_tracking_numbers(client=None, lookback_days=10):
     """
-    Tracking numbers for every fulfillment on every order placed today.
-    Hands off to the Australia Post connector for live status per number.
+    Tracking numbers for every fulfillment on any order fulfilled (fully or
+    partially) in the last `lookback_days` days.
+
+    Replaces the old "orders created today" query: that version only ever
+    looked at orders placed the same day, so a gift that shipped two days
+    ago and is still in transit silently stopped being checked. This keeps
+    rechecking every shipment in the lookback window until Australia Post
+    reports it delivered; once delivered, history.py's drop-off filter is
+    what stops it from showing up in the report, not this query.
+
+    `lookback_days` should comfortably exceed how long a parcel normally
+    takes to arrive. It's read from `shipment_lookback_days` in
+    templates/default_template.yaml, so it can be tuned without a code change.
     """
     client = client or ShopifyClient()
-    today = date.today().isoformat()
-    data = client.graphql(TODAYS_ORDERS_QUERY, {"query": f"created_at:>={today}"})
+    cutoff = (date.today() - timedelta(days=lookback_days)).isoformat()
+    search_query = (
+        f"created_at:>={cutoff} AND "
+        "(fulfillment_status:fulfilled OR fulfillment_status:partial)"
+    )
 
     tracking_numbers = []
-    for order_edge in data["orders"]["edges"]:
-        for fo_edge in order_edge["node"]["fulfillmentOrders"]["edges"]:
-            for info in fo_edge["node"]["trackingInfo"]:
-                if info.get("number"):
-                    tracking_numbers.append(info["number"])
+    cursor = None
+    while True:
+        data = client.graphql(ACTIVE_ORDERS_QUERY, {"query": search_query, "cursor": cursor})
+        orders = data["orders"]
+        for order_edge in orders["edges"]:
+            for fo_edge in order_edge["node"]["fulfillmentOrders"]["edges"]:
+                for info in fo_edge["node"]["trackingInfo"]:
+                    if info.get("number"):
+                        tracking_numbers.append(info["number"])
+
+        if not orders["pageInfo"]["hasNextPage"]:
+            break
+        cursor = orders["pageInfo"]["endCursor"]
+
     return tracking_numbers

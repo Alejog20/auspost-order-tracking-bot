@@ -9,6 +9,7 @@ Shopify connector -> Australia Post connector -> report_generator
 import logging
 
 import report_generator as rg
+from dotenv import load_dotenv
 from connectors import auspost, shopify
 from delivery.email_sender import send_report_email
 
@@ -44,4 +45,5 @@ def main():
 
 
 if __name__ == "__main__":
+    load_dotenv()
     main()

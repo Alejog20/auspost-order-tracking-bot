@@ -97,6 +97,7 @@ def _prepare_render_context(items, config, narrative):
         })
 
     return {
+        "company_name": config["company_name"],
         "report_title": config["report_title"],
         "report_date": datetime.now().strftime("%A, %-d %B"),
         "summary_headline": narrative["summary_headline"],

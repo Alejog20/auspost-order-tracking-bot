@@ -40,20 +40,16 @@ Repo: https://github.com/Alejog20/auspost-order-tracking-bot
 
 - `.gitignore` picked up a typo in the same commit that deleted the workflow file: `.env.` (trailing dot, matches almost nothing) where `.env.*` was almost certainly intended. Low risk since `.env` itself is still correctly ignored, but worth a one-line fix.
 
-## Blocked — waiting on Jay
+## Blocked — waiting on customer
 
-- Connecting the Australia Post connector to his real account (`AUSPOST_UUID` / `AUSPOST_PASS` / `AUSPOST_ACCT`), **and** confirming the connector's assumed request/response shape is actually correct
+- Connecting the Australia Post connector to real account (`AUSPOST_UUID` / `AUSPOST_PASS` / `AUSPOST_ACCT`), **and** confirming the connector's assumed request/response shape is actually correct
 - Connecting the Shopify connector to his real store (staff account invite)
 - A live end-to-end run against real data
-- Whether a PDF format is still wanted, and if so, committing to an HTML→PDF library so it can actually be built out
 
-## To define with Jay
+## To define with customer
 
-- Company name, logo/emblem, and brand colors for the report template
-- Which inbox the finished report should actually be sent to (currently sends from our own interim address)
-- Time zone and exact hour the job should run (currently a placeholder: weekdays, 2:07pm Melbourne)
-- The real values for `SHOPIFY_STORE_DOMAIN`, `SHOPIFY_CLIENT_ID`, `SHOPIFY_CLIENT_SECRET`, `AUSPOST_UUID`, `AUSPOST_PASS`, `AUSPOST_ACCT`
-- Whether a PDF format is still wanted
+- Time zone and exact hour the job should run
+- The real values for `SHOPIFY_STORE_DOMAIN`, `SHOPIFY_CLIENT_ID`, `SHOPIFY_CLIENT_SECRET`
 
 ## Next phase
 

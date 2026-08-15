@@ -6,18 +6,19 @@ on:
     # Same weekday cadence as daily_report.yaml, offset 7 minutes earlier so
     # it's easy to tell the runs apart in the Actions log. Confirms AusPost +
     # Claude + SMTP + rendering independent of whether Shopify is wired up yet.
-    - cron: "0 11 * * 0-6"
 
+    - cron: "30 17 * * 0-6"
+    
 jobs:
   send-test-report:
     runs-on: ubuntu-latest
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.14"
 

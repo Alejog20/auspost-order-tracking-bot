@@ -1,20 +1,10 @@
 """
 Australia Post Shipping & Tracking API connector.
-
-NOTE: the request/response shape below (AUTH-KEY header, digitalapi.auspost.com.au,
-tracking_results/trackable_items/events) is a best-effort reconstruction from public
-information, not verified against Australia Post's current live documentation --
-their developer portal renders via JavaScript and couldn't be fetched directly.
-Treat this as a first draft to confirm against real docs or a sample response once
-AUSPOST_API_KEY is wired to a real account, same as the rest of the connector work
-IMPLEMENTATION_PLAN.md already flags as blocked on live testing.
 """
 
 import os
 from datetime import date, datetime
-
 import requests
-
 from models import TrackingItem
 
 API_URL = "https://digitalapi.auspost.com.au/shipping/v1/track"
@@ -24,12 +14,22 @@ class AusPostError(Exception):
     pass
 
 
-def _fetch_tracking_result(tracking_number, api_key=None, api_url=API_URL):
-    api_key = api_key or os.environ["AUSPOST_API_KEY"]
+def _fetch_tracking_result(
+    tracking_number,
+    api_key_uuid=None,
+    api_key_password=None,
+    account_number=None,
+    api_url=API_URL,
+):
+    api_key_uuid = api_key_uuid or os.environ["AUSPOST_UUID"]
+    api_key_password = api_key_password or os.environ["AUSPOST_PASS"]
+    account_number = account_number or os.environ["AUSPOST_ACCT"]
+
     response = requests.get(
         api_url,
         params={"tracking_ids": tracking_number},
-        headers={"AUTH-KEY": api_key},
+        headers={"Account-Number": account_number},
+        auth=(api_key_uuid, api_key_password),
         timeout=10,
     )
     response.raise_for_status()
@@ -65,9 +65,12 @@ def _map_to_tracking_item(tracking_number, payload):
     trackable_items = results[0].get("trackable_items") or [{}]
     trackable_item = trackable_items[0]
 
-    status = trackable_item.get("status", "Unknown")
+    items = trackable_item.get("items") or [{}]
+    item = items[0]
+
+    status = item.get("status", "Unknown")
     category = _category_from_status(status)
-    events = trackable_item.get("events") or []
+    events = item.get("events") or []
     latest_event = events[0] if events else {}
 
     return TrackingItem(
@@ -76,11 +79,21 @@ def _map_to_tracking_item(tracking_number, payload):
         category=category,
         last_scan_time=_parse_datetime(latest_event.get("date")) or datetime.now(),
         last_scan_location=latest_event.get("location"),
-        expected_delivery=_parse_date(trackable_item.get("expected_delivery_date")),
+        expected_delivery=_parse_date(item.get("expected_delivery_date")),
         collection_location=latest_event.get("location") if category == "awaiting_collection" else None,
     )
 
 
-def get_tracking_item(tracking_number, api_key=None):
-    payload = _fetch_tracking_result(tracking_number, api_key=api_key)
+def get_tracking_item(
+    tracking_number,
+    api_key_uuid=None,
+    api_key_password=None,
+    account_number=None,
+):
+    payload = _fetch_tracking_result(
+        tracking_number,
+        api_key_uuid=api_key_uuid,
+        api_key_password=api_key_password,
+        account_number=account_number,
+    )
     return _map_to_tracking_item(tracking_number, payload)

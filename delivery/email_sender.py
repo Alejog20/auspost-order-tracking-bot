@@ -1,10 +1,6 @@
 """
 SMTP email delivery.
 
-Per the Day 2 decision in IMPLEMENTATION_PLAN.md: sends from our own address
-for now, interim until Jay confirms his preferred sending setup -- swap
-SMTP_HOST/SMTP_USERNAME/SMTP_PASSWORD when that happens, nothing else here
-should need to change.
 """
 
 import os

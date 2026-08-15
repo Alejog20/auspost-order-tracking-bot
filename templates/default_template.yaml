@@ -1,16 +1,14 @@
-company_name: "The Company Name"
+company_name: "The Complete Basketcase"
 report_title: "Daily Tracking Report"
 
 # A shipment with no scan update in this many days gets flagged
 # Even if its expected delivery date hasn't passed yet
-
 stale_after_days: 2
 
 # A shipment that has been sitting as delivered for longer than this 
 # many days gets left out of the report entirely, it's done, no need to
 # keep to reporting on it
 drop_after_days: 3
-
 
 # How many days back to look for orders when checking Australia Post status.
 # Should comfortably exceed how long a parcel normally takes to arrive, so
@@ -20,14 +18,12 @@ shipment_lookback_days: 10
 # Voice of given Claude's narrative
 tone: "plain, professional clever, direct, no corporate fluff, flag problems crearly and order numbers related, raise any business concerning issues with the highest priority and think of customer satisfaction"
 
-brand: 
+brand:
   delivered_color: "#3B6D11"
   delivered_bg: "#EAF3D3"
-  in_transit_color: "#185FA5"
-  in_transit_bg: "#E6F1FB"
-  collection_color: "#534AB7"
-  collection_bg: "#EEEDFE"
-  attention_color: "#854F0B"
-  attention_bg: "#FAEEDA"
-
-  
+  in_transit_color: "#6C1ED9"
+  in_transit_bg: "#F0E8FF"
+  collection_color: "#372673"
+  collection_bg: "#EEEBF5"
+  attention_color: "#F23838"
+  attention_bg: "#FDE7E7"

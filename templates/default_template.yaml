@@ -1,6 +1,10 @@
 company_name: "The Complete Basketcase"
 report_title: "Daily Tracking Report"
 
+# Path is relative to the repo root. PNG, not the source .webp -- Outlook
+# desktop doesn't render WebP images at all.
+logo_path: "assets/logo.png"
+
 # A shipment with no scan update in this many days gets flagged
 # Even if its expected delivery date hasn't passed yet
 stale_after_days: 2

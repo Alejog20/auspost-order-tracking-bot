@@ -1,6 +1,6 @@
 """
-Production entrypoint for the daily tracking report, run by
-.github/workflows/daily_report.yaml on schedule.
+Entrypoint for the daily tracking report, run by
+.github/workflows/daily_report.yaml on schedule
 
 Shopify connector -> Australia Post connector -> report_generator
 (which applies history.filter_dropped_items internally) -> email send.
@@ -40,6 +40,7 @@ def main():
     send_report_email(
         subject=f"{config['company_name']} — {config['report_title']}",
         html_body=html,
+        logo_path=config.get("logo_path"),
     )
     logger.info("Sent daily report for %d shipment(s)", len(items))
 

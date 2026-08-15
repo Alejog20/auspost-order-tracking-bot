@@ -50,4 +50,5 @@ def test_sends_live_report_for_test_orders():
     send_report_email(
         subject=f"{config['company_name']} — {config['report_title']} (TEST)",
         html_body=html,
+        logo_path=config.get("logo_path"),
     )

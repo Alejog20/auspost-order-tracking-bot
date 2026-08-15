@@ -31,6 +31,7 @@ def test_main_sends_email_with_generated_report(mocker):
             "company_name": "Jay's Gifts",
             "report_title": "Daily Tracking Report",
             "shipment_lookback_days": 14,
+            "logo_path": "assets/logo.png",
         },
     )
     mocker.patch("run_daily_report.rg.generate_report", return_value="<html>report</html>")
@@ -42,6 +43,7 @@ def test_main_sends_email_with_generated_report(mocker):
     mock_send.assert_called_once_with(
         subject="Jay's Gifts — Daily Tracking Report",
         html_body="<html>report</html>",
+        logo_path="assets/logo.png",
     )
 
 

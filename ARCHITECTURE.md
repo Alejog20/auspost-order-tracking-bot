@@ -12,7 +12,7 @@ Jay's is a gift company. Recipients don't know deliveries are coming, so there's
 
 ## Design constraints
 
-- **Config over code.** Branding, tone, and thresholds live in `templates/default_template.yaml`, not hardcoded in Python. This is what makes the same pipeline reusable for a future client, swap the config, not the logic.
+- **Config over code.** Branding, tone, and thresholds live in `templates/default_template.yaml`, not hardcoded in Python.
 - **History must persist.** `report_history.jsonl` is committed back to the repo at the end of every scheduled run. Without that commit, the 3-day drop-off rule has no memory, GitHub Actions containers don't survive between runs.
 - **No real network calls in tests.** Anthropic, Shopify, and Australia Post all get mocked in the test suite. Tests verify logic, not live services.
 - **Secrets never touch the repo.** Environment variables locally, GitHub Secrets in CI, always.
@@ -52,9 +52,9 @@ History log (`report_history.jsonl`, one JSON object per line): date plus each i
 
 **Extraction** (`connectors/`) — Shopify's GraphQL Admin API for the day's orders and tracking numbers (`shopify.py`, client-credentials grant with automatic 24h token refresh), Australia Post's tracking API for live status on each (`auspost.py`, request/response shape not yet verified against live docs — see IMPLEMENTATION_PLAN.md). Two independent sources, both buildable without Jay's credentials, only *testing* against his real accounts is blocked.
 
-**Rules** (`history.py`) — the 3-day drop-off filter, applied before anything else sees the data. Delivered-and-stale items never reach the prompt, the flagging logic, or the report.
+**Rules** (`history.py`) —  3 day drop-off filter, applied before anything else sees the data Delivered-and-stale items never reach the prompt, the flagging logic, or the report.
 
-**Reasoning** (`report_generator.py`) — builds the prompt from whatever items survive filtering, calls Claude for the plain-English narrative and headline, structured as JSON.
+**Reasoning** (`report_generator.py`) — builds the prompt from whatever items survive filtering, calls Claude for the agent narrative and headline, structured as JSON
 
 **Output** — two templates, deliberately different under the hood: `report_email.html` is table-based with inline styles for email-client compatibility, `report_pdf.html` uses modern CSS and proper `@page` rules for print, since neither format's constraints apply to the other.
 

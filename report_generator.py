@@ -48,6 +48,14 @@ def build_prompt(items, config):
     )
     return system, shipment_block
 
+def _strip_code_fence(text):
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.removeprefix("```json").removeprefix("```")
+        text = text.removesuffix("```")
+        text = text.strip()
+    return text
+
 def call_claude(system_prompt, shipment_block):
     from anthropic import Anthropic
 
@@ -58,7 +66,7 @@ def call_claude(system_prompt, shipment_block):
         system=system_prompt,
         messages=[{"role": "user", "content": shipment_block}],
     )
-    return json.loads(response.content[0].text)
+    return json.loads(_strip_code_fence(response.content[0].text))
 
 def _prepare_render_context(items, config, narrative):
     stats = {"delivered": 0, "in_transit": 0, "awaiting_collection": 0, "needs_attention": 0}

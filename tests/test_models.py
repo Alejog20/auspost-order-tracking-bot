@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from models import TrackingItem
 
 def _item(category, **overrides):
@@ -48,3 +48,8 @@ def test_awaiting_collection_near_deadline_needs_attention():
 def test_awaiting_collection_no_deadline_no_attention():
     item = _item("awaiting_collection", collection_location="Test LPO")
     assert item.needs_attention() is False
+
+def test_days_since_scan_handles_timezone_aware_last_scan_time():
+    aware_time = datetime.now(timezone.utc) - timedelta(days=3)
+    item = _item("in_transit", last_scan_time=aware_time)
+    assert item.days_since_scan == 3

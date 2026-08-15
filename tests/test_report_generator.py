@@ -138,3 +138,29 @@ def test_call_claude_parses_json_response(mocker):
     }
 
     mock_client.messages.create.assert_called_once()
+
+
+def test_call_claude_strips_markdown_code_fence(mocker):
+    """
+    Real Claude responses sometimes wrap JSON in a ```json ... ``` fence
+    even when asked to respond as JSON only -- confirmed against a live call.
+    """
+
+    fake_response = mocker.Mock()
+    fake_response.content = [
+        mocker.Mock(
+            text='```json\n{"summary_headline":"ok","items":[]}\n```'
+        )
+    ]
+
+    mock_client = mocker.Mock()
+    mock_client.messages.create.return_value = fake_response
+
+    mocker.patch("anthropic.Anthropic", return_value=mock_client)
+
+    result = rg.call_claude("system prompt", "shipment block")
+
+    assert result == {
+        "summary_headline": "ok",
+        "items": [],
+    }

@@ -18,7 +18,8 @@ class TrackingItem:
 
     @property
     def days_since_scan(self) -> int:
-        return (datetime.now() - self.last_scan_time).days
+        now = datetime.now(self.last_scan_time.tzinfo)
+        return (now - self.last_scan_time).days
 
     def needs_attention(self, stale_after_days=2, collection_warn_days=3):
         if self.category == "delivered":

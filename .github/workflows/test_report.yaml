@@ -1,0 +1,41 @@
+name: Live report smoke test
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Same weekday cadence as daily_report.yaml, offset 7 minutes earlier so
+    # it's easy to tell the runs apart in the Actions log. Confirms AusPost +
+    # Claude + SMTP + rendering independent of whether Shopify is wired up yet.
+    - cron: "0 11 * * 0-6"
+
+jobs:
+  send-test-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Run live report smoke test
+        run: uv run pytest -m live tests/test_live_report.py -v -s
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AUSPOST_UUID: ${{ secrets.AUSPOST_UUID }}
+          AUSPOST_PASS: ${{ secrets.AUSPOST_PASS }}
+          AUSPOST_ACCT: ${{ secrets.AUSPOST_ACCT }}
+          EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}
+          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          TEST_ORDERS: ${{ secrets.TEST_ORDERS }}

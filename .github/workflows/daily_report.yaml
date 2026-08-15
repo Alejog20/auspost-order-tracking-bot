@@ -4,7 +4,7 @@ on:
   schedule:
     # GitHub Actions cron uses UTC.
     # Update this expression if you want a specific Melbourne local time.
-    - cron: "0 17 * * 0-6"
+    - cron: "30 17 * * 0-6"
 
   workflow_dispatch:
 

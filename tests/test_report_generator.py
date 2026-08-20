@@ -112,6 +112,31 @@ def test_log_report_writes_category(config, sample_items, tmp_path):
     assert categories["XYZ789"] == "awaiting_collection"
 
 
+def test_generate_report_returns_none_when_all_items_filtered(mocker, config):
+    """
+    If every item is a delivered shipment past drop_after_days, the drop-off
+    filter empties the list before the Claude call. Must skip the call
+    entirely (Claude rejects an empty user message) and signal "nothing to
+    send" to the caller instead of raising.
+    """
+    stale_delivered = TrackingItem(
+        tracking_number="OLD123",
+        status="Delivered",
+        category="delivered",
+        last_scan_time=datetime.now() - timedelta(days=10),
+    )
+    mocker.patch(
+        "history.filter_dropped_items",
+        return_value=[],
+    )
+    mock_call_claude = mocker.patch("report_generator.call_claude")
+
+    result = rg.generate_report([stale_delivered], template_path=None)
+
+    assert result is None
+    mock_call_claude.assert_not_called()
+
+
 def test_call_claude_parses_json_response(mocker):
     """
     Mocked; doesn't hit the real API.

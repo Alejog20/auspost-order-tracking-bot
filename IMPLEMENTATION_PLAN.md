@@ -40,6 +40,22 @@ Repo: https://github.com/Alejog20/auspost-order-tracking-bot
 
 - `.gitignore` picked up a typo in the same commit that deleted the workflow file: `.env.` (trailing dot, matches almost nothing) where `.env.*` was almost certainly intended. Low risk since `.env` itself is still correctly ignored, but worth a one-line fix.
 
+## Day 5 (2026-08-20) — report redesign, a production-shaped bug found via the smoke test, spreadsheet export scoped
+
+1. **This week's Actions run audit.** `daily_report.yaml` has failed every scheduled run this week — expected, `SHOPIFY_STORE_DOMAIN` / `SHOPIFY_CLIENT_ID` / `SHOPIFY_CLIENT_SECRET` aren't in GitHub Secrets yet, still blocked on Jay per below. `test_report.yaml` (the live smoke test) passed 8/15–8/18 then started failing 8/19–8/20 — a real bug, see next point.
+2. **Found and fixed a latent crash, not just a smoke-test flake.** `report_generator.generate_report()` / `generate_pdf_report()` apply the 3-day drop-off filter *after* the caller's zero-items guard already passed, so if every item in a batch happens to be a delivered shipment older than `drop_after_days`, the filter empties the list right before the Claude call — which then gets an empty prompt and Anthropic rejects it (`user messages must have non-empty content`). Confirmed live: all three `TEST_ORDERS` tracking numbers (`39BQC5000057/67/47`) were delivered 14-17 days ago. Fixed by returning `None` from both generator functions when filtering empties the list; `run_daily_report.py` and the smoke test both treat `None` as "nothing to report" instead of crashing. This same gap exists in the real production path once Shopify is live — a day where every shipment already aged out would have hit the identical crash. Test added: `test_generate_report_returns_none_when_all_items_filtered`.
+3. **`TEST_ORDERS` needs refreshing with real, currently-active tracking numbers** — not something that can be fixed in code, these have to be real Australia Post consignments. Blocked on getting 2-3 fresh numbers from Jay/the client, then update both `.env` locally and the `TEST_ORDERS` GitHub Secret.
+4. **Report template redesign** (`templates/report_email.html`, `templates/report_pdf.html`, `templates/default_template.yaml`) per client visual spec: Inter for UI text, monospace stack for tracking numbers, lighter gray for secondary text (dates, narrative) vs. darker/bolder titles and tracking numbers, status grid boxed in a bordered light-gray panel with vertical dividers, badges as rounded pills, alternating row tint, palette consolidated to three hues (brand purple / success green / alert crimson — softened from the previous bright red). `assets/logo.png` cropped tight to its visible content (was ~18% visible content on a much larger transparent canvas), which both fixes the left-alignment against the title text and makes the wordmark render meaningfully larger at the same display width — the wordmark itself is a flat raster image, so this is the ceiling of what's fixable without a new source file from whoever designed the logo.
+5. All 42 tests passing locally (`uv run pytest -v`).
+
+## Next — tracking-status spreadsheet export
+
+Scoped with the client, not yet built:
+
+- **Scope decision made:** tracking-level status only (tracking number, status, category, needs_attention, days_since_scan) — no customer name/order number/address. Keeps it PII-free, same shape as what `report_history.jsonl` already logs, and needs zero changes to the Shopify GraphQL query.
+- **Plan:** new function in `report_generator.py` (e.g. `generate_status_spreadsheet`) using `openpyxl`, built in memory (`BytesIO`), never written to a path git tracks. Attached to the existing daily email via `delivery/email_sender.py` as a real attachment (not the inline `cid:` logo pattern) — reuses SMTP delivery and secrets already in place, no new infrastructure.
+- **Explicitly not doing yet:** GitHub Actions workflow-artifact delivery (not friendly for Jay, who is non-technical and would have to dig through the Actions UI) or a live Google Sheet (needs a new service account credential — bigger lift, revisit if Jay's team wants a persistent sheet rather than a daily snapshot).
+
 ## Blocked — waiting on customer
 
 - Connecting the Australia Post connector to real account (`AUSPOST_UUID` / `AUSPOST_PASS` / `AUSPOST_ACCT`), **and** confirming the connector's assumed request/response shape is actually correct

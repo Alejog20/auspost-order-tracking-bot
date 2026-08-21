@@ -23,7 +23,7 @@ Jay's is a gift company. Recipients don't know deliveries are coming, so there's
 - Jinja2 for templating, PyYAML for config
 - Anthropic SDK for the report narrative
 - pytest for testing
-- GitHub Actions for both scheduling (`daily_report.yaml`) and CI (`tests.yml`)
+- GitHub Actions for scheduling (`daily_report.yaml`), a daily live smoke test (`test_report.yaml`) and CI (`tests.yaml`)
 - SMTP for email delivery (interim sender: our own address, until Jay confirms his preferred inbox)
 
 ## Data model
@@ -54,13 +54,13 @@ History log (`report_history.jsonl`, one JSON object per line): date plus each i
 
 **Rules** (`history.py`) —  3 day drop-off filter, applied before anything else sees the data Delivered-and-stale items never reach the prompt, the flagging logic, or the report.
 
-**Reasoning** (`report_generator.py`) — builds the prompt from whatever items survive filtering, calls Claude for the agent narrative and headline, structured as JSON
+**Reasoning** (`report_generator.py`) — builds the prompt from whatever items survive filtering, calls Claude for the agent narrative and headline, structured as JSON. If the drop-off filter empties the item list entirely, `generate_report`/`generate_pdf_report` return `None` rather than sending an empty prompt to Claude (which the API rejects) — callers (`run_daily_report.py`, the live smoke test) treat `None` as "nothing to report today."
 
-**Output** — two templates, deliberately different under the hood: `report_email.html` is table-based with inline styles for email-client compatibility, `report_pdf.html` uses modern CSS and proper `@page` rules for print, since neither format's constraints apply to the other.
+**Output** — two templates, deliberately different under the hood: `report_email.html` is table-based with inline styles for email-client compatibility, `report_pdf.html` uses modern CSS and proper `@page` rules for print, since neither format's constraints apply to the other. Both share one typographic/color system: Inter for UI text, a monospace stack (JetBrains Mono / SF Mono / Consolas) for tracking numbers, and a three-hue palette (brand purple, success green, alert crimson — `default_template.yaml`'s `brand` block) instead of one color per status category. `assets/logo.png` is cropped tight to its visible content so it renders true-size and left-aligned in the report header instead of carrying a large baked-in transparent margin.
 
-**Delivery** (`delivery/email_sender.py`) — SMTP send of the email report. SMTP sending credentials aren't in `.env` yet (see IMPLEMENTATION_PLAN.md), so this can't send for real until they land. PDF delivery has no rendering pipeline decided yet, so `run_daily_report.py` only wires the email path.
+**Delivery** (`delivery/email_sender.py`) — SMTP send of the email report, wired to real credentials in GitHub Secrets. PDF delivery is styled but still has no rendering pipeline decided (HTML output only, no HTML→PDF library, not wired into `run_daily_report.py`) — see IMPLEMENTATION_PLAN.md.
 
-**Scheduling** — GitHub Actions, weekdays, currently 2:07pm Melbourne (placeholder pending Jay's actual preference), a few minutes off the hour deliberately since scheduled runs queue up at :00 across all of GitHub.
+**Scheduling** — GitHub Actions, daily. `daily_report.yaml` runs the production pipeline (Shopify → Australia Post → report); `test_report.yaml` runs a few minutes earlier against `TEST_ORDERS` tracking numbers via Australia Post + Claude + real SMTP send, independent of whether Shopify is wired up, as a smoke test for everything downstream of Shopify. Both scheduled a few minutes off the hour deliberately since scheduled runs queue up at :00 across all of GitHub.
 
 ## File structure
 
@@ -68,12 +68,15 @@ History log (`report_history.jsonl`, one JSON object per line): date plus each i
 auspost-order-tracking-bot/
 ├── .github/workflows/
 │   ├── daily_report.yaml      # scheduled production run
-│   └── tests.yml              # CI, every push/PR
+│   ├── test_report.yaml       # daily live smoke test against TEST_ORDERS
+│   └── tests.yaml             # CI, every push/PR
 ├── connectors/
 │   ├── shopify.py             # GraphQL Admin API, tracking numbers per order
 │   └── auspost.py             # live tracking status, schema unverified — see IMPLEMENTATION_PLAN.md
 ├── delivery/
-│   └── email_sender.py        # SMTP send, real credentials not wired yet
+│   └── email_sender.py        # SMTP send, inline cid logo attachment
+├── assets/
+│   └── logo.png                # cropped tight to visible content, used in the email header
 ├── templates/
 │   ├── default_template.yaml
 │   ├── report_email.html
@@ -85,7 +88,8 @@ auspost-order-tracking-bot/
 │   ├── test_shopify.py
 │   ├── test_auspost.py
 │   ├── test_email_sender.py
-│   └── test_run_daily_report.py
+│   ├── test_run_daily_report.py
+│   └── test_live_report.py    # live marker, excluded from default `pytest` run
 ├── models.py
 ├── history.py
 ├── report_generator.py

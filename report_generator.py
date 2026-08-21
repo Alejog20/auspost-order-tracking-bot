@@ -154,6 +154,8 @@ def log_report(items, config, log_path=None):
 def generate_report(items, template_path=None):
     config = load_template_config(template_path)
     items = history.filter_dropped_items(items, config.get("drop_after_days", 3))
+    if not items:
+        return None
     system_prompt, shipment_block = build_prompt(items, config)
     narrative = call_claude(system_prompt, shipment_block)
     log_report(items, config)
@@ -162,6 +164,8 @@ def generate_report(items, template_path=None):
 def generate_pdf_report(items, template_path=None):
     config = load_template_config(template_path)
     items = history.filter_dropped_items(items, config.get("drop_after_days", 3))
+    if not items:
+        return None
     system_prompt, shipment_block = build_prompt(items, config)
     narrative = call_claude(system_prompt, shipment_block)
     log_report(items, config)

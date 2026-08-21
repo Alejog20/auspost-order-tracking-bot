@@ -23,11 +23,13 @@ shipment_lookback_days: 10
 tone: "plain, professional clever, direct, no corporate fluff, flag problems crearly and order numbers related, raise any business concerning issues with the highest priority and think of customer satisfaction"
 
 brand:
-  delivered_color: "#3B6D11"
-  delivered_bg: "#EAF3D3"
+  # Three core hues: brand purple (in_transit / collection, two tints of the
+  # same family), success green (delivered), alert crimson (needs_attention).
+  delivered_color: "#15803D"
+  delivered_bg: "#DCFCE7"
   in_transit_color: "#6C1ED9"
-  in_transit_bg: "#F0E8FF"
-  collection_color: "#372673"
-  collection_bg: "#EEEBF5"
-  attention_color: "#F23838"
-  attention_bg: "#FDE7E7"
+  in_transit_bg: "#F5F3FF"
+  collection_color: "#5B21B6"
+  collection_bg: "#EDE9FE"
+  attention_color: "#B42318"
+  attention_bg: "#FEF3F2"

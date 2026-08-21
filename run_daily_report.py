@@ -37,6 +37,10 @@ def main():
         return
 
     html = rg.generate_report(items)
+    if html is None:
+        logger.info("All shipments already reported as delivered, skipping email send")
+        return
+
     send_report_email(
         subject=f"{config['company_name']} — {config['report_title']}",
         html_body=html,

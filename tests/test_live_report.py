@@ -46,6 +46,13 @@ def test_sends_live_report_for_test_orders():
 
     config = rg.load_template_config()
     html = rg.generate_report(items)
+    if html is None:
+        pytest.fail(
+            "All TEST_ORDERS were filtered out by the "
+            f"{config.get('drop_after_days', 3)}-day drop-off rule (already delivered "
+            "and aged out) -- refresh TEST_ORDERS with tracking numbers that are still "
+            "in transit or were delivered recently."
+        )
 
     send_report_email(
         subject=f"{config['company_name']} — {config['report_title']} (TEST)",

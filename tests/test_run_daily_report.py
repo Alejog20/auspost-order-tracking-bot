@@ -35,16 +35,20 @@ def test_main_sends_email_with_generated_report(mocker):
         },
     )
     mocker.patch("run_daily_report.rg.generate_report", return_value="<html>report</html>")
+    mocker.patch("run_daily_report.rg.generate_status_spreadsheet", return_value=b"fake-xlsx-bytes")
     mock_send = mocker.patch("run_daily_report.send_report_email")
 
     entry.main()
 
     mock_collect.assert_called_once_with(lookback_days=14)
-    mock_send.assert_called_once_with(
-        subject="Jay's Gifts — Daily Tracking Report",
-        html_body="<html>report</html>",
-        logo_path="assets/logo.png",
-    )
+    mock_send.assert_called_once()
+    _, kwargs = mock_send.call_args
+    assert kwargs["subject"] == "Jay's Gifts — Daily Tracking Report"
+    assert kwargs["html_body"] == "<html>report</html>"
+    assert kwargs["logo_path"] == "assets/logo.png"
+    assert kwargs["attachment_bytes"] == b"fake-xlsx-bytes"
+    assert kwargs["attachment_filename"].startswith("tracking-status-")
+    assert kwargs["attachment_filename"].endswith(".xlsx")
 
 
 def test_main_skips_send_when_no_items(mocker):
@@ -53,6 +57,20 @@ def test_main_skips_send_when_no_items(mocker):
         return_value={"company_name": "Jay's Gifts", "report_title": "Daily Tracking Report"},
     )
     mocker.patch("run_daily_report.collect_tracking_items", return_value=[])
+    mock_send = mocker.patch("run_daily_report.send_report_email")
+
+    entry.main()
+
+    mock_send.assert_not_called()
+
+
+def test_main_skips_send_when_report_is_none(mocker):
+    mocker.patch(
+        "run_daily_report.rg.load_template_config",
+        return_value={"company_name": "Jay's Gifts", "report_title": "Daily Tracking Report"},
+    )
+    mocker.patch("run_daily_report.collect_tracking_items", return_value=[mocker.Mock()])
+    mocker.patch("run_daily_report.rg.generate_report", return_value=None)
     mock_send = mocker.patch("run_daily_report.send_report_email")
 
     entry.main()

@@ -137,6 +137,52 @@ def test_generate_report_returns_none_when_all_items_filtered(mocker, config):
     mock_call_claude.assert_not_called()
 
 
+def test_generate_status_spreadsheet_returns_none_when_all_items_filtered(mocker, config, sample_items):
+    mocker.patch("history.filter_dropped_items", return_value=[])
+
+    result = rg.generate_status_spreadsheet(sample_items)
+
+    assert result is None
+
+
+def test_generate_status_spreadsheet_contains_tracking_rows(config, sample_items):
+    from io import BytesIO
+
+    from openpyxl import load_workbook
+
+    xlsx_bytes = rg.generate_status_spreadsheet(sample_items)
+    workbook = load_workbook(BytesIO(xlsx_bytes))
+    sheet = workbook.active
+
+    rows = list(sheet.iter_rows(values_only=True))
+
+    assert rows[0] == ("Tracking number", "Status", "Category", "Needs attention", "Days since scan")
+
+    by_tracking_number = {row[0]: row for row in rows[1:]}
+    assert set(by_tracking_number) == {"ABC123", "XYZ789"}
+
+    abc_row = by_tracking_number["ABC123"]
+    assert abc_row[1] == "In transit"
+    assert abc_row[2] == "in_transit"
+    assert abc_row[3] == "No"
+    assert abc_row[4] == 0
+
+
+def test_generate_status_spreadsheet_excludes_items_the_drop_off_filter_removes(mocker, config, sample_items):
+    from io import BytesIO
+
+    from openpyxl import load_workbook
+
+    mocker.patch("history.filter_dropped_items", return_value=sample_items[:1])
+
+    xlsx_bytes = rg.generate_status_spreadsheet(sample_items)
+    workbook = load_workbook(BytesIO(xlsx_bytes))
+    sheet = workbook.active
+
+    tracking_numbers = {row[0] for row in sheet.iter_rows(min_row=2, values_only=True)}
+    assert tracking_numbers == {"ABC123"}
+
+
 def test_call_claude_parses_json_response(mocker):
     """
     Mocked; doesn't hit the real API.

@@ -1,8 +1,11 @@
 import json
 from datetime import datetime, date
+from io import BytesIO
 from pathlib import Path
 import yaml
 from jinja2 import Environment, FileSystemLoader
+from openpyxl import Workbook
+from openpyxl.styles import Font
 import history
 
 
@@ -160,6 +163,46 @@ def generate_report(items, template_path=None):
     narrative = call_claude(system_prompt, shipment_block)
     log_report(items, config)
     return _render_report(items, config, narrative)
+
+def generate_status_spreadsheet(items, template_path=None):
+    """
+    Tracking-status-only workbook: tracking number, status, category,
+    needs_attention, days_since_scan -- no customer name, order number, or
+    address, so it carries none of the PII concerns a full order export
+    would. Built in memory and returned as bytes; never written to a path
+    git tracks. Applies the same drop-off filter as the email/PDF report so
+    the attachment always matches what the email body says.
+    """
+    config = load_template_config(template_path)
+    items = history.filter_dropped_items(items, config.get("drop_after_days", 3))
+    if not items:
+        return None
+
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Tracking status"
+
+    headers = ["Tracking number", "Status", "Category", "Needs attention", "Days since scan"]
+    sheet.append(headers)
+    for cell in sheet[1]:
+        cell.font = Font(bold=True)
+
+    for item in items:
+        sheet.append([
+            item.tracking_number,
+            item.status,
+            item.category,
+            "Yes" if item.needs_attention(config["stale_after_days"]) else "No",
+            item.days_since_scan,
+        ])
+
+    for column_cells in sheet.columns:
+        width = max(len(str(cell.value)) for cell in column_cells)
+        sheet.column_dimensions[column_cells[0].column_letter].width = width + 2
+
+    buffer = BytesIO()
+    workbook.save(buffer)
+    return buffer.getvalue()
 
 def generate_pdf_report(items, template_path=None):
     config = load_template_config(template_path)

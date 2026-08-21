@@ -7,7 +7,7 @@ on:
     # it's easy to tell the runs apart in the Actions log. Confirms AusPost +
     # Claude + SMTP + rendering independent of whether Shopify is wired up yet.
 
-    - cron: "30 17 * * 0-6"
+    - cron: "2 13 * * 1-5"
     
 jobs:
   send-test-report:

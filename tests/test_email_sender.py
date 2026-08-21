@@ -87,3 +87,47 @@ def test_send_report_email_without_logo_path_omits_attachment(mocker):
 
     args, _ = mock_smtp_instance.sendmail.call_args
     assert "Content-ID" not in args[2]
+
+
+def test_send_report_email_attaches_spreadsheet(mocker):
+    mock_smtp_instance = mocker.Mock()
+    mock_smtp_instance.__enter__ = mocker.Mock(return_value=mock_smtp_instance)
+    mock_smtp_instance.__exit__ = mocker.Mock(return_value=False)
+    mocker.patch("delivery.email_sender.smtplib.SMTP", return_value=mock_smtp_instance)
+
+    send_report_email(
+        subject="Daily Tracking Report",
+        html_body="<p>hello</p>",
+        recipient="jay@example.com",
+        sender="bot@example.com",
+        password="secret",
+        smtp_host="smtp.example.com",
+        smtp_port=587,
+        attachment_bytes=b"fake-xlsx-bytes",
+        attachment_filename="tracking-status-2026-08-20.xlsx",
+    )
+
+    args, _ = mock_smtp_instance.sendmail.call_args
+    raw_message = args[2]
+    assert 'Content-Disposition: attachment; filename="tracking-status-2026-08-20.xlsx"' in raw_message
+    assert "Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" in raw_message
+
+
+def test_send_report_email_without_attachment_bytes_omits_it(mocker):
+    mock_smtp_instance = mocker.Mock()
+    mock_smtp_instance.__enter__ = mocker.Mock(return_value=mock_smtp_instance)
+    mock_smtp_instance.__exit__ = mocker.Mock(return_value=False)
+    mocker.patch("delivery.email_sender.smtplib.SMTP", return_value=mock_smtp_instance)
+
+    send_report_email(
+        subject="Daily Tracking Report",
+        html_body="<p>hello</p>",
+        recipient="jay@example.com",
+        sender="bot@example.com",
+        password="secret",
+        smtp_host="smtp.example.com",
+        smtp_port=587,
+    )
+
+    args, _ = mock_smtp_instance.sendmail.call_args
+    assert "Content-Disposition: attachment" not in args[2]

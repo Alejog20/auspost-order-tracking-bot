@@ -7,6 +7,7 @@ Shopify connector -> Australia Post connector -> report_generator
 """
 
 import logging
+from datetime import date
 
 import report_generator as rg
 from dotenv import load_dotenv
@@ -41,10 +42,14 @@ def main():
         logger.info("All shipments already reported as delivered, skipping email send")
         return
 
+    spreadsheet = rg.generate_status_spreadsheet(items)
+
     send_report_email(
         subject=f"{config['company_name']} — {config['report_title']}",
         html_body=html,
         logo_path=config.get("logo_path"),
+        attachment_bytes=spreadsheet,
+        attachment_filename=f"tracking-status-{date.today().isoformat()}.xlsx",
     )
     logger.info("Sent daily report for %d shipment(s)", len(items))
 

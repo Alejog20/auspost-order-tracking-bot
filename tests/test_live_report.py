@@ -10,6 +10,7 @@ explicitly:
 """
 
 import os
+from datetime import date
 
 import pytest
 from dotenv import load_dotenv
@@ -54,8 +55,12 @@ def test_sends_live_report_for_test_orders():
             "in transit or were delivered recently."
         )
 
+    spreadsheet = rg.generate_status_spreadsheet(items)
+
     send_report_email(
         subject=f"{config['company_name']} — {config['report_title']} (TEST)",
         html_body=html,
         logo_path=config.get("logo_path"),
+        attachment_bytes=spreadsheet,
+        attachment_filename=f"tracking-status-{date.today().isoformat()}.xlsx",
     )
